@@ -1,0 +1,28 @@
+
+body {
+
+	background-color: #5c5c5c;
+}
+
+.horizontalSlider {
+	width:200px; margin:15px;
+}
+
+.verticalSlider {
+	height:100px; float:left; margin: 25px 25px 0px 25px;
+}
+
+.verticalSliderLabel {
+	width:66px; float:left; margin:0px; text-align: center;
+}
+
+.spinner {
+	float:left;
+	width:50px;
+	height:25px;
+}
+
+.toolbar {
+	display: inline-block;
+	font-size: 0.6em; 
+}

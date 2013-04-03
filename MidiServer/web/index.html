@@ -1,0 +1,206 @@
+<html>
+<head>
+<title>Midi Server</title>
+<link rel="stylesheet" href="css/jquery-ui.css" />
+<link rel="stylesheet" href="css/default.css" />
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/jquery-ui.js"></script>
+<script type="text/javascript" src="js/system.js" ></script>
+<script type="text/javascript" src="js/rpc.js" ></script>
+<script type="text/javascript" src="js/midiserver.js" ></script>
+<script type="text/javascript" src="js/databinding.js" ></script>
+<script type="text/javascript" src="js/ui.js" ></script>
+  
+<script type="text/javascript">
+
+var updateInterval = 50; // milliseconds
+
+function update() {
+	midi.processMessages();
+}
+
+function setMidiChannel(channel) {
+	if (null != channel && channel != midi.getChannel()) {
+		midi.setChannel(channel);
+	}
+}
+
+function sendMidi(byte0, byte1, byte2, byte3) {
+	midi.send(byte0, byte1, byte2, byte3);
+}
+
+function main() {
+
+	system.initialize();
+	rpc.initialize();
+	databinding.initialize();
+	midi.initialize();
+	userinterface.initialize();
+
+	system.setTimer(updateInterval, function() {
+		update();
+	});
+
+	/*
+	midi.onNoteOn = function(channel, key, velocity) { 
+		system.log("Note On: " + key + " (" + velocity.toFixed(3) + ")");
+	}
+	
+	midi.onNoteOff = function(channel, key) {
+		system.log("Note Off: " + key);
+	}
+	*/
+	
+	/*
+	midi.midiListener = function(byte0, byte1, byte2, byte3) {
+	
+		var timeStamp = system.getTime();
+	
+		var midiInfo = "0x" + byte0.toString(16) + " " +
+				   "0x" + byte1.toString(16) + " " +
+				   "0x" + byte2.toString(16) + " " + 
+				   "0x" + byte3.toString(16);
+	
+		//system.log(timeStamp / 1000 + ": " + midiInfo);
+		
+		return true;
+	}
+	*/
+
+	midi.onControlChange = function(channel, controller, value) { 
+		databinding.dispatch(channel, controller, value);
+	}
+	
+	midi.onPitchBend = function(channel, value) {
+		databinding.dispatch(channel, MIDI.Event.PitchBend, value);
+	}
+	
+	$("#status").text("MIDI Monitor" + (midi.isOpen() ? "" : " (offline)"));
+	
+	setMidiChannel(0);
+	
+	/*
+	$("#channels").buttonset();
+	
+	$("#channels").change(function(event) {
+		var value = parseInt(event.target.id.substring(7)) ;
+		if (false == isNaN(value) && value > 0) {
+			setMidiChannel(value-1);
+		}
+	});
+	*/
+
+	$("#controlstart").button( 
+		{ icons: { primary: "ui-icon-play" } }
+	)
+		.click(function(event) {
+			sendMidi(MIDI.System.Start);
+		});
+		
+	$("#controlcontinue").button(
+		{ icons: { primary: "ui-icon-seek-next" } }
+	)
+		.click(function(event) {
+			sendMidi(MIDI.System.Continue);
+		});
+		
+	$("#controlstop").button(
+		{ icons: { primary: "ui-icon-stop" } }
+	)
+		.click(function(event) {
+			sendMidi(MIDI.System.Stop);
+		});
+	
+	$("#spinner").spinner(
+		{
+			stop: function(event, ui) { setMidiChannel($(this).spinner("value")) },
+			min: 0, 
+			max: 15
+		}
+	)
+	.spinner("value", midi.getChannel());
+}
+
+$(document).ready(function(){
+	main();
+});
+	
+
+</script>
+
+</head>
+
+<body>
+
+<div id="status" class="ui-widget-header ui-corner-all" style="padding: 4px;">
+  MIDI Monitor
+</div>
+
+<div class="ui-widget-content ui-corner-all" style="padding: 16px 16px 16px 4px; margin-top: 1em;">
+	<span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin: -2px 5px 0 0;"></span>
+	<span>MIDI Channel</span>
+	<!--
+	<div id="channels" style="font-size: 0.6em; float: right; margin: 0 0 0 0; line-height: 1.0;">
+		<input type="radio" name="channels" id="channel1" checked="checked" /><label for="channel1">1</label>
+		<input type="radio" name="channels" id="channel2" /><label for="channel2">2</label>
+		<input type="radio" name="channels" id="channel3" /><label for="channel3">3</label>
+		<input type="radio" name="channels" id="channel4" /><label for="channel4">4</label>
+		<input type="radio" name="channels" id="channel5" /><label for="channel5">5</label>
+		<input type="radio" name="channels" id="channel6" /><label for="channel6">6</label>
+		<input type="radio" name="channels" id="channel7" /><label for="channel7">7</label>
+		<input type="radio" name="channels" id="channel8" /><label for="channel8">8</label>
+		<input type="radio" name="channels" id="channel9" /><label for="channel9">9</label>
+		<input type="radio" name="channels" id="channel10" /><label for="channel10">10</label>
+		<input type="radio" name="channels" id="channel11" /><label for="channel11">11</label>
+		<input type="radio" name="channels" id="channel12" /><label for="channel12">12</label>
+		<input type="radio" name="channels" id="channel13" /><label for="channel13">13</label>
+		<input type="radio" name="channels" id="channel14" /><label for="channel14">14</label>
+		<input type="radio" name="channels" id="channel15" /><label for="channel15">15</label>
+		<input type="radio" name="channels" id="channel16" /><label for="channel16">16</label>
+	</div>
+	-->
+
+	<div style="font-size: 0.6em; float: right; margin: 0 0 0 0; line-height: 1.0;">
+		<input id="spinner" name="value" />
+	</div>
+	
+</div>
+
+<div class="ui-widget-content ui-corner-all" style="padding: 16px 16px 16px 4px; margin-top: 1em;">
+	<span class="ui-icon ui-icon-gear" style="float: left; margin: -2px 5px 0 0;"></span>
+	Controls
+	<div style="font-size: 0.6em; float: right; margin: 0 0 0 0; line-height: 1.0;">
+		<button id="controlstart">Start</button>
+		<button id="controlcontinue">Continue</button>
+		<button id="controlstop">Stop</button>
+	</div>
+</div>
+
+<div class="ui-widget-content ui-corner-all" style="padding: 8px; margin-top: 1em; padding-bottom: 32px;">
+  <span class="ui-icon ui-icon-signal" style="float: left; margin: -2px 5px 0 0;"></span>
+  <span>Controllers</span>
+ 
+	<div style="height: 160px">
+	  <span class="verticalSlider" data-source="MIDI.Control.Volume" /></span>
+	  <span class="verticalSlider" data-source="MIDI.Event.PitchBend" /></span>
+	  <span class="verticalSlider" data-source="MIDI.Control.Modulation" /></span>
+	  <span class="verticalSlider" data-source="MIDI.Control.Pan" /></span>
+	  <span class="verticalSlider" data-source="MIDI.Control.Reverb" /></span>
+	  <span class="verticalSlider" data-source="MIDI.Control.Chorus" /></span>
+	  <span class="verticalSlider" data-source="MIDI.Control.Sustain" /></span>
+	</div>
+	
+	<div style="font-size: 0.7em;">
+	  <span class="verticalSliderLabel">Volume</span>
+	  <span class="verticalSliderLabel" >Pitch Bend</span>
+	  <span class="verticalSliderLabel" >Modulation</span>
+	  <span class="verticalSliderLabel" >Pan</span>
+	  <span class="verticalSliderLabel" >Reverb</span>
+	  <span class="verticalSliderLabel" >Chorus</span>
+	  <span class="verticalSliderLabel" >Sustain</span>
+	</div>
+</div>
+
+</body>
+
+</html>
